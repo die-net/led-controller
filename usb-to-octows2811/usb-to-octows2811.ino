@@ -20,11 +20,6 @@ CRGB leds[NUM_LEDS];
 #define GREEN_MW_PER_LED 92
 #define BLUE_MW_PER_LED 89
 
-// For led chips like Neopixels, which have a data line, ground, and power, you just
-// need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
-// ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
-#define DATA_PIN 2
-
 // Pin layouts on the teensy 3:
 // OctoWS2811: 2,14,7,8,6,20,21,5
 
@@ -35,10 +30,9 @@ int frame_count = 0;
 
 void setup() {
   pinMode(STATUS_LED, OUTPUT);
-  analogWrite(STATUS_LED, 255);
+  digitalWrite(STATUS_LED, HIGH);
 
   Serial.begin(115200);
-  //FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_A);
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_B);
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_C);
@@ -55,7 +49,7 @@ void setup() {
   FastLED.show();
 
   delay(500);
-  analogWrite(STATUS_LED, 0);
+  digitalWrite(STATUS_LED, LOW);
 
   // Now turn the LED off, then pause
   leds[0] = CRGB::Black;
@@ -64,7 +58,7 @@ void setup() {
   FastLED.show();
   delay(500);
 
-  analogWrite(STATUS_LED, 255);
+  digitalWrite(STATUS_LED, HIGH);
 }
 
 long leds_mw_per_supply() {
@@ -103,14 +97,14 @@ void receive_frame() {
   // Limit brightness based on guess of power draw per supply.
   long mw = leds_mw_per_supply();
   if (mw > MAX_SUPPLY_MW) {
-    brightness = 255 * MAX_SUPPLY_MW / mw;
+    brightness = brightness * MAX_SUPPLY_MW / mw;
     frame_count += 7;  // Make status LED blink faster.
   }
 
   FastLED.show(brightness);
 
   frame_count++;
-  analogWrite(STATUS_LED, frame_count & 0xff);
+  digitalWrite(STATUS_LED, (frame_count & 0x80) ? HIGH : LOW);
 
   Serial.print(brightness);
   Serial.print("\t");
