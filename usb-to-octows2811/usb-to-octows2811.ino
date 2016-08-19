@@ -2,6 +2,7 @@
 #define USE_OCTOWS2811
 #include<OctoWS2811.h>
 #include<FastLED.h>
+#include<ADC.h>
 
 #define NUM_LEDS_STRIP_A 514
 #define NUM_LEDS_STRIP_B 370
@@ -26,11 +27,37 @@ CRGB leds[NUM_LEDS];
 // Pin 13 has the LED on Teensy 3.0
 // give it a name:
 #define STATUS_LED 13
+
+// Pin A9 is audio in
+#define AUDIO_PIN A9
+
 int frame_count = 0;
+
+ADC *adc = new ADC();
+
+short adc0_count = 0;
+short adc0_min = 0;
+short adc0_max = 0;
+long adc0_total = 0;
+
+void adc0_isr(void) {
+    int v = adc->analogReadContinuous(ADC_0);
+    if (adc0_count <= 0) {
+        adc0_count = 0;
+        adc0_min = v;
+        adc0_max = v;
+        adc0_total = v;
+    } else {
+        adc0_min = min(adc0_min, v);
+        adc0_max = max(adc0_max, v);
+        adc0_total += v;
+    }
+    adc0_count++;
+}
 
 void setup() {
   pinMode(STATUS_LED, OUTPUT);
-  digitalWrite(STATUS_LED, HIGH);
+  digitalWriteFast(STATUS_LED, HIGH);
 
   Serial.begin(115200);
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_A);
@@ -49,7 +76,7 @@ void setup() {
   FastLED.show();
 
   delay(500);
-  digitalWrite(STATUS_LED, LOW);
+  digitalWriteFast(STATUS_LED, LOW);
 
   // Now turn the LED off, then pause
   leds[0] = CRGB::Black;
@@ -58,7 +85,16 @@ void setup() {
   FastLED.show();
   delay(500);
 
-  digitalWrite(STATUS_LED, HIGH);
+  pinMode(AUDIO_PIN, INPUT);
+
+  adc->setAveraging(32); // set number of averages
+  adc->setResolution(12); // set bits of resolution
+  adc->setConversionSpeed(ADC_LOW_SPEED); // change the conversion speed
+  adc->setSamplingSpeed(ADC_LOW_SPEED); // change the sampling speed
+  adc->enableInterrupts(ADC_0);
+  adc->startContinuous(AUDIO_PIN, ADC_0);
+
+  digitalWriteFast(STATUS_LED, HIGH);
 }
 
 long leds_mw_per_supply() {
@@ -104,11 +140,28 @@ void receive_frame() {
   FastLED.show(brightness);
 
   frame_count++;
-  digitalWrite(STATUS_LED, (frame_count & 0x80) ? HIGH : LOW);
+  digitalWriteFast(STATUS_LED, (frame_count & 0x80) ? HIGH : LOW);
+
+  // Try to copy values quickly. This is a race condition with the interrupt.
+  short audio_count = adc0_count;
+  short audio_avg = adc0_total / max(1, audio_count);
+  short audio_min = adc0_min;
+  short audio_max = adc0_max;
+  // Reset the counter, which will cause the interrupt to clear other values.
+  adc0_count = 0;
 
   Serial.print(brightness);
   Serial.print("\t");
-  Serial.println(mw);
+  Serial.print(mw);
+  Serial.print("\t");
+  Serial.print(audio_count);
+  Serial.print("\t");
+  Serial.print(audio_min * 5000 / 4096);  // Return min in mV
+  Serial.print("\t");
+  Serial.print(audio_avg * 5000 / 4096);  // Return avg in mV
+  Serial.print("\t");
+  Serial.println(audio_max * 5000 / 4096);  // Return max in mV
+  Serial.send_now();
 }
 
 void loop() {
