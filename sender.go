@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/tarm/serial"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -22,34 +21,8 @@ type Sender struct {
 	AudioDimming  int
 	MaxBrightness int
 	Brightness    int
+	ColorFilter   Frame
 	StatusChan    chan<- []byte
-}
-
-type AudioMv struct {
-	Count float32 `json:"count,omitempty"`
-	Min   float32 `json:"min"`
-	Avg   float32 `json:"avg"`
-	Max   float32 `json:"max"`
-}
-
-func (mv AudioMv) MovingAverage(n AudioMv) AudioMv {
-	mv.Count = (mv.Count*255 + n.Count) / 256
-	mv.Avg = (mv.Avg*255 + n.Avg) / 256
-	if n.Min < mv.Min {
-		mv.Min = n.Min
-	} else {
-		mv.Min = (mv.Min*255 + n.Min) / 256
-	}
-	if n.Max > mv.Max {
-		mv.Max = n.Max
-	} else {
-		mv.Max = (mv.Max*255 + n.Max) / 256
-	}
-	return mv
-}
-
-func (mv AudioMv) Amplitude() int {
-	return int(mv.Max - mv.Min + 0.5)
 }
 
 type Feedback struct {
@@ -99,11 +72,26 @@ func (s *Sender) send(fc <-chan Frame) error {
 	return nil
 }
 
+func (s *Sender) SetColorFilter(f Frame) {
+	if len(f) == 3 && f[0] == 0xff && f[1] == 0xff && f[2] == 0xff {
+		s.ColorFilter = Frame{}
+	} else {
+		f, err := f.Resize(s.NumPixels)
+		if err == nil {
+			s.ColorFilter = f
+		}
+	}
+}
+
 func (s *Sender) sendFrame(p *serial.Port, f Frame) error {
 	var err error
 	f, err = f.Resize(s.NumPixels)
 	if err != nil {
 		return err
+	}
+
+	if len(s.ColorFilter) == s.NumPixels {
+		f = f.Mult(s.ColorFilter)
 	}
 
 	n, err := p.Write([]byte{'*', byte(s.Brightness)})
@@ -169,9 +157,4 @@ func (s *Sender) reader(p *serial.Port) error {
 	}
 
 	return nil
-}
-
-func atoi(a string) int {
-	i, _ := strconv.Atoi(a)
-	return i
 }

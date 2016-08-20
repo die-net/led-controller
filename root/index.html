@@ -45,7 +45,11 @@ function send(msg) {
     return false;
 }
 
-window.onload = connect;
+function send_color(jscolor) {
+    return send({'color': "#"+jscolor});
+}
+
+window.addEventListener("load", connect, false);
 
 </script>
 <style type="text/css">
@@ -85,14 +89,14 @@ body {
 }
 
 .bar {
-    width: 60%;
     height: 3em;
+    width: calc(100% - 12em);
 }
 
 label {
+    width: 8em;
     float: left;
     clear: left;
-    width: 8em;
 }
 
 img {
@@ -117,15 +121,17 @@ Audio: <div id="audio_volts">?</div>v avg,
 <label for="set_audio_dimming">Audio Dimming:</label>
 <input type="range" id="set_audio_dimming" class="bar" min="0" max="255" value="0" onchange="send({'audio_dimming': document.getElementById('set_audio_dimming').value})">
 <br>
-<label for="set_color">Solid Color:</label>
-<input type="color" class="bar" id="set_color" value="#ff0000" onchange="send({'color': document.getElementById('set_color').value})">
 </form>
+<label for="set_color">Color Filter:</label>
+<button type="button" id="set_color" class="bar jscolor" data-jscolor="{value:'ffffff',onFineChange:'send_color(this)'}"></button>
 </div>
 <div class="controls">
 <img src="/images/black/_thumb.jpg" width=80 height=80 onclick="send({'image': 'black'})">
+<img src="/images/white/_thumb.jpg" width=80 height=80 onclick="send({'image': 'white'})">
 <img src="/images/default/_thumb.jpg" width=80 height=80 onclick="send({'image': 'default'})">
 <img src="/images/default/_thumb.jpg" width=80 height=80 onclick="send({'image': 'default'})">
 <img src="/images/default/_thumb.jpg" width=80 height=80 onclick="send({'image': 'default'})">
 </div>
+<script type="text/javascript" src="js/jscolor.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 )
@@ -28,9 +29,14 @@ func NewDecoder(path string) *Decoder {
 		return nil
 	}
 
+	start := 0
+	if len(files) > 1 {
+		start = rand.Intn(len(files))
+	}
+
 	d := &Decoder{
 		files:   files,
-		fileNum: 0,
+		fileNum: start,
 		image:   nil,
 		y:       0,
 	}
@@ -101,7 +107,7 @@ func (d *Decoder) NextFrame() Frame {
 
 	// If we're on the last row, we'll have to load the next image.
 	d.y++
-	if d.y > d.image.Bounds().Max.Y {
+	if d.y >= d.image.Bounds().Max.Y {
 		d.NextImage()
 	}
 

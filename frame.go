@@ -15,12 +15,12 @@ type Frame []byte
 func ImageRowToFrame(img image.Image, y int) Frame {
 	bounds := img.Bounds()
 
-	width := bounds.Max.X - bounds.Min.X + 1
+	width := bounds.Max.X - bounds.Min.X
 	f := make([]byte, width*3, width*3)
 
-	if y >= bounds.Min.Y && y <= bounds.Max.Y {
+	if y >= bounds.Min.Y && y < bounds.Max.Y {
 		o := 0
-		for x := bounds.Min.X; x <= bounds.Max.X; x++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, _ := img.At(x, y).RGBA()
 			f[o] = byte(r >> 8)
 			f[o+1] = byte(g >> 8)
@@ -129,4 +129,27 @@ func (a Frame) Merge(b Frame) Frame {
 	}
 
 	return f
+}
+
+// Mult multiplies each pixel of a with b
+func (a Frame) Mult(b Frame) Frame {
+	a, b, err := SameSize(a, b)
+	if err != nil {
+		return nil
+	}
+
+	l := len(a)
+	f := make(Frame, l, l)
+	for i := 0; i < l; i++ {
+		f[i] = byte((int(a[i]) * int(b[i])) / 255)
+	}
+
+	return f
+}
+
+func (f Frame) NextFrame() Frame {
+	return f
+}
+
+func (f Frame) Close() {
 }

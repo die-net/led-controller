@@ -46,18 +46,8 @@ func Receiver(incoming <-chan []byte, t *Streamer, s *Sender) {
 		if incoming.Color != "" && incoming.Color[0] == '#' {
 			b, err := hex.DecodeString(incoming.Color[1:])
 			if err == nil && len(b) == 3 {
-				rf := RepeatFrame(b)
-				t.SetFramer(rf)
+				s.SetColorFilter(b)
 			}
 		}
 	}
-}
-
-type RepeatFrame []byte
-
-func (r RepeatFrame) NextFrame() Frame {
-	return Frame(r)
-}
-
-func (r RepeatFrame) Close() {
 }
