@@ -61,8 +61,14 @@ func getFilenames(path string) ([]string, error) {
 }
 
 func (d *Decoder) NextImage() bool {
-	d.image = nil
 	d.y = 0
+
+	// If we only have one image and it's already loaded, we're done.
+	if d.image != nil && len(d.files) < 2 {
+		return true
+	}
+
+	d.image = nil
 	for {
 		if len(d.files) == 0 {
 			return false
