@@ -68,7 +68,7 @@ func (d *Decoder) NextImage() bool {
 			return false
 		}
 
-		if d.fileNum > len(d.files) {
+		if d.fileNum >= len(d.files) {
 			d.fileNum = 0
 		}
 		file := d.files[d.fileNum]
