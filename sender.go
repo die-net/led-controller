@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/tarm/serial"
+	"log"
+	"strconv"
 	"time"
 )
 
@@ -13,10 +16,51 @@ var (
 )
 
 type Sender struct {
-	SerialPort string
-	BaudRate   int
-	NumPixels  int
-	Brightness byte
+	SerialPort    string
+	BaudRate      int
+	NumPixels     int
+	MinBrightness int
+	MaxBrightness int
+	Brightness    int
+	StatusChan    chan<- []byte
+}
+
+type AudioMv struct {
+	Count float32 `json:"count,omitempty"`
+	Min   float32 `json:"min"`
+	Avg   float32 `json:"avg"`
+	Max   float32 `json:"max"`
+}
+
+func (mv AudioMv) MovingAverage(n AudioMv) AudioMv {
+	mv.Count = (mv.Count*255 + n.Count) / 256
+	mv.Avg = (mv.Avg*255 + n.Avg) / 256
+	if n.Min < mv.Min {
+		mv.Min = n.Min
+	} else {
+		mv.Min = (mv.Min*255 + n.Min) / 256
+	}
+	if n.Max > mv.Max {
+		mv.Max = n.Max
+	} else {
+		mv.Max = (mv.Max*255 + n.Max) / 256
+	}
+	return mv
+}
+
+func (mv AudioMv) Amplitude() int {
+	return int(mv.Max - mv.Min + 0.5)
+}
+
+type Feedback struct {
+	Brightness       int     `json:"brightness"`
+	SupplyMilliwatts int     `json:"supply_mw"`
+	AudioMv          AudioMv `json:"audio_mv"`
+}
+
+type Status struct {
+	Feedback
+	Recent AudioMv `json:"recent"`
 }
 
 func (s *Sender) Worker(fc <-chan Frame) {
@@ -41,7 +85,7 @@ func (s *Sender) send(fc <-chan Frame) error {
 	}
 	defer p.Close()
 
-	go reader(p)
+	go s.reader(p)
 
 	for frame := range fc {
 		if err := s.sendFrame(p, frame); err != nil {
@@ -59,7 +103,7 @@ func (s *Sender) sendFrame(p *serial.Port, f Frame) error {
 		return err
 	}
 
-	n, err := p.Write([]byte{'*', s.Brightness})
+	n, err := p.Write([]byte{'*', byte(s.Brightness)})
 	if err != nil {
 		return err
 	}
@@ -77,13 +121,50 @@ func (s *Sender) sendFrame(p *serial.Port, f Frame) error {
 	return nil
 }
 
-func reader(p *serial.Port) error {
+func (s *Sender) reader(p *serial.Port) error {
 	r := bufio.NewReader(p)
+
+	recent := AudioMv{Count: 0, Min: 5000, Avg: 2500, Max: 0}
+
 	for {
-		l, err := r.ReadString('\n')
+		l, err := r.ReadBytes('\n')
 		if err != nil {
 			return err
 		}
-		fmt.Print(l)
+
+		feedback := Feedback{}
+		err = json.Unmarshal(l, &feedback)
+		if err != nil {
+			log.Println("reader: Error unmarshalling", err)
+			continue
+		}
+
+		recent = recent.MovingAverage(feedback.AudioMv)
+
+		maxAmp := recent.Amplitude()
+		if maxAmp < 200 {
+			s.Brightness = s.MaxBrightness // Less than .2 volts is probably noise. Ignore it.
+		} else {
+			amp := feedback.AudioMv.Amplitude()
+			s.Brightness = s.MinBrightness + (amp*(s.MaxBrightness-s.MinBrightness))/maxAmp
+		}
+
+		if s.StatusChan != nil {
+			status := Status{
+				Feedback: feedback,
+				Recent:   recent,
+			}
+			b, err := json.Marshal(status)
+			if err == nil {
+				s.StatusChan <- b
+			}
+		}
 	}
+
+	return nil
+}
+
+func atoi(a string) int {
+	i, _ := strconv.Atoi(a)
+	return i
 }

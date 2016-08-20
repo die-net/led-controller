@@ -30,6 +30,9 @@ CRGB leds[NUM_LEDS];
 
 // Pin A9 is audio in
 #define AUDIO_PIN A9
+#define ADC_MAX_MILLIVOLTS 5000
+#define ADC_RESOLUTION 12
+#define ADC_SCALE (1<<ADC_RESOLUTION)
 
 int frame_count = 0;
 
@@ -41,18 +44,18 @@ short adc0_max = 0;
 long adc0_total = 0;
 
 void adc0_isr(void) {
-    int v = adc->analogReadContinuous(ADC_0);
-    if (adc0_count <= 0) {
-        adc0_count = 0;
-        adc0_min = v;
-        adc0_max = v;
-        adc0_total = v;
-    } else {
-        adc0_min = min(adc0_min, v);
-        adc0_max = max(adc0_max, v);
-        adc0_total += v;
-    }
-    adc0_count++;
+  int v = adc->analogReadContinuous(ADC_0);
+  if (adc0_count <= 0) {
+    adc0_count = 0;
+    adc0_min = v;
+    adc0_max = v;
+    adc0_total = v;
+  } else {
+    adc0_min = min(adc0_min, v);
+    adc0_max = max(adc0_max, v);
+    adc0_total += v;
+  }
+  adc0_count++;
 }
 
 void setup() {
@@ -88,7 +91,7 @@ void setup() {
   pinMode(AUDIO_PIN, INPUT);
 
   adc->setAveraging(32); // set number of averages
-  adc->setResolution(12); // set bits of resolution
+  adc->setResolution(ADC_RESOLUTION); // set bits of resolution
   adc->setConversionSpeed(ADC_LOW_SPEED); // change the conversion speed
   adc->setSamplingSpeed(ADC_LOW_SPEED); // change the sampling speed
   adc->enableInterrupts(ADC_0);
@@ -150,17 +153,23 @@ void receive_frame() {
   // Reset the counter, which will cause the interrupt to clear other values.
   adc0_count = 0;
 
+  // Send it in JSON form to make it easy to parse.
+  Serial.print("{\"brightness\":");
   Serial.print(brightness);
-  Serial.print("\t");
+  Serial.print(",\"supply_mw\":");
   Serial.print(mw);
-  Serial.print("\t");
-  Serial.print(audio_count);
-  Serial.print("\t");
-  Serial.print(audio_min * 5000 / 4096);  // Return min in mV
-  Serial.print("\t");
-  Serial.print(audio_avg * 5000 / 4096);  // Return avg in mV
-  Serial.print("\t");
-  Serial.println(audio_max * 5000 / 4096);  // Return max in mV
+  if (audio_count > 0) {
+    Serial.print(",\"audio_mv\":{\"count\":");
+    Serial.print(audio_count);
+    Serial.print(",\"min\":");
+    Serial.print(audio_min * ADC_MAX_MILLIVOLTS / ADC_SCALE);  // Return min in mV
+    Serial.print(",\"avg\":");
+    Serial.print(audio_avg * ADC_MAX_MILLIVOLTS / ADC_SCALE);  // Return avg in mV
+    Serial.print(",\"max\":");
+    Serial.print(audio_max * ADC_MAX_MILLIVOLTS / ADC_SCALE);  // Return max in mV
+    Serial.print("}");
+  }
+  Serial.println("}");
   Serial.send_now();
 }
 

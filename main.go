@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/die-net/led-controller/ws"
 	"log"
 	"net/http"
 	_ "net/http/pprof" // Adds http://*/debug/pprof/ to default mux.
@@ -17,8 +18,9 @@ var (
 	numPixels       = flag.Int("num-pixels", 2448, "Number of pixels on USB controller")
 	serialPort      = flag.String("serial-port", "", "Serial port to open")
 	frameDelay      = flag.Duration("frame-delay", time.Second/30, "Delay between sending frames")
-	brightness      = flag.Int("brightness", 255, "Brightness value of LEDs (max 255)")
-	imagePath       = flag.String("image-path", "", "Directory of images to play")
+	minBrightness   = flag.Int("min-brightness", 255, "Min sound-activated brightness value of LEDs (max 255)")
+	maxBrightness   = flag.Int("max-brightness", 255, "Brightness value of LEDs (max 255)")
+	rootDir         = flag.String("root-dir", "", "Base directory for http serving and video files")
 )
 
 func main() {
@@ -30,6 +32,10 @@ func main() {
 		log.Fatal("-serial-port must be set")
 	}
 
+	if *rootDir == "" {
+		log.Fatal("-root-dir must be set")
+	}
+
 	if *numPixels <= 0 || *numPixels > 10000 {
 		log.Fatal("-num-pixels must be > 0 and <= 10000")
 	}
@@ -38,24 +44,40 @@ func main() {
 		log.Fatal("-frameDelay must be > 0.001s")
 	}
 
-	if *brightness <= 0 || *brightness > 255 {
-		log.Fatal("-brightness must be > 0 and <= 255")
+	if *maxBrightness <= 0 || *maxBrightness > 255 {
+		log.Fatal("-max-brightness must be > 0 and <= 255")
 	}
 
+	if *minBrightness <= 0 || *minBrightness > *maxBrightness {
+		log.Fatal("-min-brightness must be > 0 and <= -max-brightness")
+	}
+
+	http.Handle("/", http.FileServer(http.Dir(*rootDir)))
+
+	router := ws.NewRouter()
+	go router.Worker()
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		router.ServeWs(w, r)
+	})
+
 	sender := Sender{
-		SerialPort: *serialPort,
-		BaudRate:   *baudRate,
-		NumPixels:  *numPixels * 3,
-		Brightness: 255,
+		SerialPort:    *serialPort,
+		BaudRate:      *baudRate,
+		NumPixels:     *numPixels * 3,
+		MinBrightness: *minBrightness,
+		MaxBrightness: *maxBrightness,
+		StatusChan:    router.Outgoing,
 	}
 	streamer := NewStreamer()
 	sc := make(chan Frame, *imageFrameQueue)
 	go sender.Worker(sc)
 	go streamer.Worker(sc, *frameDelay)
 
-	decoder := NewDecoder(*imagePath)
+	imagePath := *rootDir + "images/default/"
+	decoder := NewDecoder(imagePath)
 	if decoder == nil {
-		log.Fatal("-image-path contains no valid images")
+		log.Fatal(imagePath, "contains no valid images")
 	}
 	streamer.SetFramer(decoder)
 
