@@ -51,7 +51,7 @@ func getFilenames(path string) ([]string, error) {
 	o := []string{}
 	for _, file := range files {
 		n := file.Name()
-		if strings.HasPrefix(n, ".") || file.IsDir() {
+		if strings.HasPrefix(n, ".") || strings.HasPrefix(n, "_") || file.IsDir() {
 			continue
 		}
 		o = append(o, path+"/"+n)

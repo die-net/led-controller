@@ -1,55 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Chat Example</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>LED Controller</title>
 <script type="text/javascript">
-window.onload = function () {
-    var conn;
-    var msg = document.getElementById("msg");
-    var log = document.getElementById("log");
 
-    function appendLog(item) {
-        var doScroll = log.scrollTop === log.scrollHeight - log.clientHeight;
-        log.appendChild(item);
-        if (doScroll) {
-            log.scrollTop = log.scrollHeight - log.clientHeight;
-        }
+var conn;
+
+function connect() {
+    var hostport = window.location.href.split("/")[2];
+    if (conn != null) {
+        conn.close();
+        conn = null;
     }
-
-    document.getElementById("form").onsubmit = function () {
-        if (!conn) {
-            return false;
-        }
-        if (!msg.value) {
-            return false;
-        }
-        conn.send(msg.value);
-        msg.value = "";
-        return false;
+    conn = new WebSocket("ws://"+hostport+"/ws");
+    conn.onclose = function (evt) {
+        document.body.style.backgroundColor = '#ff0000';
+        setTimeout(connect, 1000);
     };
-
-    if (window["WebSocket"]) {
-	var hostport = window.location.href.split("/")[2];
-        conn = new WebSocket("ws://"+hostport+"/ws");
-        conn.onclose = function (evt) {
-            var item = document.createElement("div");
-            item.innerHTML = "<b>Connection closed.</b>";
-            appendLog(item);
-        };
-        conn.onmessage = function (evt) {
-            var messages = evt.data.split('\n');
-            for (var i = 0; i < messages.length; i++) {
-                var item = document.createElement("div");
-                item.innerText = messages[i];
-                appendLog(item);
+    conn.onmessage = function (evt) {
+        var messages = evt.data.split('\n');
+        for (var i = 0; i < messages.length; i++) {
+            var status = JSON.parse(messages[i]);
+            for (var key in status) {
+                var item = document.getElementById(key);
+                if (item != null) {
+                    item.innerHTML = status[key];
+                }
             }
-        };
-    } else {
-        var item = document.createElement("div");
-        item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
-        appendLog(item);
+
+            var color = Math.min(255, status.brightness);
+            color = ((color << 16) | (color << 8) | color).toString(16);
+            document.body.style.backgroundColor = '#000000'.slice(0, -color.length) + color;
+        }
+    };
+}
+
+function send(msg) {
+    if (conn && msg) {
+        conn.send(JSON.stringify(msg));
     }
-};
+    return false;
+}
+
+window.onload = connect;
+
 </script>
 <style type="text/css">
 html {
@@ -62,38 +59,73 @@ body {
     margin: 0;
     width: 100%;
     height: 100%;
-    background: gray;
+    background: #666666;
+    color: #000000;
+    max-width: 1024px;
 }
 
-#log {
-    background: white;
-    margin: 0;
+.status {
+    background: #ffffff;
+    margin: 0.5em;
     padding: 0.5em 0.5em 0.5em 0.5em;
-    position: absolute;
-    top: 0.5em;
-    left: 0.5em;
-    right: 0.5em;
-    bottom: 3em;
-    overflow: auto;
 }
 
-#form {
-    padding: 0 0.5em 0 0.5em;
-    margin: 0;
-    position: absolute;
-    bottom: 1em;
-    left: 0px;
-    width: 100%;
-    overflow: hidden;
+.status div {
+    width: 2.4em;
+    display: inline-block;
+    text-align: right;
+    background: #eeeeee;
+}
+
+.controls {
+    margin: 0.5em;
+    padding: 0.5em;
+    color: #fff;
+    background-color: #333;
+}
+
+.bar {
+    width: 60%;
+    height: 3em;
+}
+
+label {
+    float: left;
+    clear: left;
+    width: 8em;
+}
+
+img {
+    padding: 0.25em;
 }
 
 </style>
 </head>
 <body>
-<div id="log"></div>
-<form id="form">
-    <input type="submit" value="Send" />
-    <input type="text" id="msg" size="64"/>
+<div class="status">
+Brightness: <div id="brightness">?</div>%
+Supply: <div id="watts">?</div>w
+Audio: <div id="audio_volts">?</div>v avg,
+<div id="audio_amplitude">?</div>v/
+<div id="audio_max_amplitude">?</div>v amplitude
+</div>
+<div class="controls">
+<form>
+<label for="set_brightness">Brightness:</label>
+<input type="range" id="set_brightness" class="bar" min="0" max="255" value="255" onchange="send({'brightness': document.getElementById('set_brightness').value})">
+<br>
+<label for="set_audio_dimming">Audio Dimming:</label>
+<input type="range" id="set_audio_dimming" class="bar" min="0" max="255" value="0" onchange="send({'audio_dimming': document.getElementById('set_audio_dimming').value})">
+<br>
+<label for="set_color">Solid Color:</label>
+<input type="color" class="bar" id="set_color" value="#ff0000" onchange="send({'color': document.getElementById('set_color').value})">
 </form>
+</div>
+<div class="controls">
+<img src="/images/black/_thumb.jpg" width=80 height=80 onclick="send({'image': 'black'})">
+<img src="/images/default/_thumb.jpg" width=80 height=80 onclick="send({'image': 'default'})">
+<img src="/images/default/_thumb.jpg" width=80 height=80 onclick="send({'image': 'default'})">
+<img src="/images/default/_thumb.jpg" width=80 height=80 onclick="send({'image': 'default'})">
+</div>
 </body>
 </html>

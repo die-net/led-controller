@@ -18,7 +18,7 @@ var (
 	numPixels       = flag.Int("num-pixels", 2448, "Number of pixels on USB controller")
 	serialPort      = flag.String("serial-port", "", "Serial port to open")
 	frameDelay      = flag.Duration("frame-delay", time.Second/30, "Delay between sending frames")
-	minBrightness   = flag.Int("min-brightness", 255, "Min sound-activated brightness value of LEDs (max 255)")
+	audioDimming    = flag.Int("audio-dimming", 0, "Maximum amount we can dim based on audio amplitude (0 = disable, max 255)")
 	maxBrightness   = flag.Int("max-brightness", 255, "Brightness value of LEDs (max 255)")
 	rootDir         = flag.String("root-dir", "", "Base directory for http serving and video files")
 )
@@ -48,8 +48,8 @@ func main() {
 		log.Fatal("-max-brightness must be > 0 and <= 255")
 	}
 
-	if *minBrightness <= 0 || *minBrightness > *maxBrightness {
-		log.Fatal("-min-brightness must be > 0 and <= -max-brightness")
+	if *audioDimming < 0 || *audioDimming > 255 {
+		log.Fatal("-audio-dimming must be >= 0 and <= 255")
 	}
 
 	http.Handle("/", http.FileServer(http.Dir(*rootDir)))
@@ -65,7 +65,7 @@ func main() {
 		SerialPort:    *serialPort,
 		BaudRate:      *baudRate,
 		NumPixels:     *numPixels * 3,
-		MinBrightness: *minBrightness,
+		AudioDimming:  *audioDimming,
 		MaxBrightness: *maxBrightness,
 		StatusChan:    router.Outgoing,
 	}
@@ -80,6 +80,8 @@ func main() {
 		log.Fatal(imagePath, "contains no valid images")
 	}
 	streamer.SetFramer(decoder)
+
+	go Receiver(router.Incoming, streamer, &sender)
 
 	log.Fatal(http.ListenAndServe(*listenAddr, nil))
 }

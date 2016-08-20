@@ -19,7 +19,7 @@ type Sender struct {
 	SerialPort    string
 	BaudRate      int
 	NumPixels     int
-	MinBrightness int
+	AudioDimming  int
 	MaxBrightness int
 	Brightness    int
 	StatusChan    chan<- []byte
@@ -59,8 +59,11 @@ type Feedback struct {
 }
 
 type Status struct {
-	Feedback
-	Recent AudioMv `json:"recent"`
+	Brightness        int     `json:"brightness"`
+	SupplyWatts       int     `json:"watts"`
+	AudioVolts        float32 `json:"audio_volts"`
+	AudioAmplitude    float32 `json:"audio_amplitude"`
+	AudioMaxAmplitude float32 `json:"audio_max_amplitude"`
 }
 
 func (s *Sender) Worker(fc <-chan Frame) {
@@ -142,17 +145,21 @@ func (s *Sender) reader(p *serial.Port) error {
 		recent = recent.MovingAverage(feedback.AudioMv)
 
 		maxAmp := recent.Amplitude()
+		amp := feedback.AudioMv.Amplitude()
 		if maxAmp < 200 {
 			s.Brightness = s.MaxBrightness // Less than .2 volts is probably noise. Ignore it.
 		} else {
-			amp := feedback.AudioMv.Amplitude()
-			s.Brightness = s.MinBrightness + (amp*(s.MaxBrightness-s.MinBrightness))/maxAmp
+			r := s.MaxBrightness * s.AudioDimming / 255
+			s.Brightness = s.MaxBrightness - r + amp*r/maxAmp
 		}
 
 		if s.StatusChan != nil {
 			status := Status{
-				Feedback: feedback,
-				Recent:   recent,
+				Brightness:        feedback.Brightness * 100 / 255,
+				SupplyWatts:       feedback.SupplyMilliwatts / 1000,
+				AudioVolts:        float32(int(recent.Avg)) / 1000,
+				AudioAmplitude:    float32(amp) / 1000,
+				AudioMaxAmplitude: float32(maxAmp) / 1000,
 			}
 			b, err := json.Marshal(status)
 			if err == nil {
