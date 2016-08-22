@@ -26,7 +26,7 @@ func Receiver(incoming <-chan []byte, t *Streamer, s *Sender) {
 
 		if incoming.Brightness != "" {
 			brightness, err := strconv.Atoi(incoming.Brightness)
-			if err == nil && brightness > 0 && brightness <= 255 {
+			if err == nil && brightness >= 0 && brightness <= 255 {
 				s.MaxBrightness = brightness
 			}
 		}

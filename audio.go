@@ -7,18 +7,19 @@ type AudioMv struct {
 	Max   float32 `json:"max"`
 }
 
-func (mv AudioMv) MovingAverage(n AudioMv) AudioMv {
-	mv.Count = (mv.Count*255 + n.Count) / 256
-	mv.Avg = (mv.Avg*255 + n.Avg) / 256
+func (mv AudioMv) MovingAverage(n AudioMv, samples float32) AudioMv {
+	mult := samples - 1
+	mv.Count = (mv.Count*mult + n.Count) / samples
+	mv.Avg = (mv.Avg*mult + n.Avg) / samples
 	if n.Min < mv.Min {
 		mv.Min = n.Min
 	} else {
-		mv.Min = (mv.Min*255 + n.Min) / 256
+		mv.Min = (mv.Min*mult + n.Min) / samples
 	}
 	if n.Max > mv.Max {
 		mv.Max = n.Max
 	} else {
-		mv.Max = (mv.Max*255 + n.Max) / 256
+		mv.Max = (mv.Max*mult + n.Max) / samples
 	}
 	return mv
 }

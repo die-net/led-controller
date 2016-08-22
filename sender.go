@@ -116,6 +116,7 @@ func (s *Sender) reader(p *serial.Port) error {
 	r := bufio.NewReader(p)
 
 	recent := AudioMv{Count: 0, Min: 5000, Avg: 2500, Max: 0}
+	live := AudioMv{Count: 0, Min: 5000, Avg: 2500, Max: 0}
 
 	for {
 		l, err := r.ReadBytes('\n')
@@ -130,15 +131,16 @@ func (s *Sender) reader(p *serial.Port) error {
 			continue
 		}
 
-		recent = recent.MovingAverage(feedback.AudioMv)
+		recent = recent.MovingAverage(feedback.AudioMv, 512)
+		live = live.MovingAverage(feedback.AudioMv, 16)
 
 		maxAmp := recent.Amplitude()
-		amp := feedback.AudioMv.Amplitude()
-		if maxAmp < 200 {
-			s.Brightness = s.MaxBrightness // Less than .2 volts is probably noise. Ignore it.
+		liveAmp := live.Amplitude()
+		if maxAmp < 50 {
+			s.Brightness = s.MaxBrightness // Less than .05 volts is probably noise. Ignore it.
 		} else {
 			r := s.MaxBrightness * s.AudioDimming / 255
-			s.Brightness = s.MaxBrightness - r + amp*r/maxAmp
+			s.Brightness = s.MaxBrightness - r + liveAmp*r/maxAmp
 		}
 
 		if s.StatusChan != nil {
@@ -146,7 +148,7 @@ func (s *Sender) reader(p *serial.Port) error {
 				Brightness:        feedback.Brightness * 100 / 255,
 				SupplyWatts:       feedback.SupplyMilliwatts / 1000,
 				AudioVolts:        float32(int(recent.Avg)) / 1000,
-				AudioAmplitude:    float32(amp) / 1000,
+				AudioAmplitude:    float32(liveAmp) / 1000,
 				AudioMaxAmplitude: float32(maxAmp) / 1000,
 			}
 			b, err := json.Marshal(status)

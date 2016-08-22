@@ -73,7 +73,7 @@ void setup() {
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_D);
 
   FastLED.setCorrection(TypicalSMD5050);
-  FastLED.setTemperature(Tungsten40W);
+  FastLED.setTemperature(Tungsten100W);
 
   FastLED.setBrightness(MAX_BRIGHTNESS);
   leds[0] = CRGB::Red;
