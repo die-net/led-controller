@@ -13,6 +13,7 @@ type Incoming struct {
 	Brightness   string `json:"brightness"`
 	AudioDimming string `json:"audio_dimming"`
 	Color        string `json:"color"`
+	PixelList    string `json:"pixel_list"`
 }
 
 func Receiver(incoming <-chan []byte, t *Streamer, s *Sender) {
@@ -47,6 +48,12 @@ func Receiver(incoming <-chan []byte, t *Streamer, s *Sender) {
 			b, err := hex.DecodeString(incoming.Color[1:])
 			if err == nil && len(b) == 3 {
 				s.SetColorFilter(b)
+			}
+		}
+		if incoming.PixelList != "" {
+			f, err := PixelListToFrame(*numPixels, incoming.PixelList)
+			if err == nil {
+				t.SetFramer(f)
 			}
 		}
 	}

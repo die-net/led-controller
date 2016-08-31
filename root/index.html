@@ -121,6 +121,9 @@ Audio: <div id="audio_volts">?</div>v avg,
 <label for="set_audio_dimming">Audio Dimming:</label>
 <input type="range" id="set_audio_dimming" class="bar" min="0" max="255" value="0" onchange="send({'audio_dimming': document.getElementById('set_audio_dimming').value})">
 <br>
+<label for="set_pixel_list">Pixel List:</label>
+<input type="text" id="set_pixel_list" class="bar" value="" onchange="send({'pixel_list': document.getElementById('set_pixel_list').value})">
+<br>
 </form>
 <label for="set_color">Color Filter:</label>
 <button type="button" id="set_color" class="bar jscolor" data-jscolor="{value:'ffffff',onFineChange:'send_color(this)'}"></button>

@@ -3,10 +3,13 @@ package main
 import (
 	"errors"
 	"image"
+	"strconv"
+	"strings"
 )
 
 var (
-	ErrNoData = errors.New("No pixel data supplied")
+	ErrNoData        = errors.New("No pixel data supplied")
+	ErrInvalidOffset = errors.New("Invalid pixel offset")
 )
 
 type Frame []byte
@@ -30,6 +33,26 @@ func ImageRowToFrame(img image.Image, y int) Frame {
 	}
 
 	return f
+}
+
+func PixelListToFrame(px int, pl string) (Frame, error) {
+	f := make([]byte, px*3, px*3)
+	o := 0
+	for _, s := range strings.Split(pl, ",") {
+		v, err := strconv.Atoi(strings.TrimSpace(s))
+		if err != nil {
+			return nil, err
+		}
+		if v <= 0 || v+o > px {
+			return nil, ErrInvalidOffset
+		}
+
+		f[o*3+1] = 0xff // Green start
+		o += v
+		f[(o-1)*3+0] = 0xff // Red end
+	}
+
+	return f, nil
 }
 
 // Make sure we have exactly num pixels.  If not, repeat existing or
