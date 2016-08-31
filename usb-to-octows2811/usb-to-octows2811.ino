@@ -63,14 +63,14 @@ void setup() {
   digitalWriteFast(STATUS_LED, HIGH);
 
   Serial.begin(115200);
-  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_A);
-  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_B);
-  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_C);
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_D);
-  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_A);
-  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_B);
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_C);
+  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_B);
+  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_A);
   FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_D);
+  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_C);
+  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_B);
+  FastLED.addLeds<OCTOWS2811>(leds, NUM_LEDS_STRIP_A);
 
   FastLED.setCorrection(TypicalSMD5050);
   FastLED.setTemperature(Tungsten100W);
