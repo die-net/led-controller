@@ -14,12 +14,12 @@ var (
 
 type Frame []byte
 
-// Copy an image.Image row to a Frame
+// ImageRowToFrame copies an image.Image row to a Frame
 func ImageRowToFrame(img image.Image, y int) Frame {
 	bounds := img.Bounds()
 
 	width := bounds.Max.X - bounds.Min.X
-	f := make([]byte, width*3, width*3)
+	f := make([]byte, width*3)
 
 	if y >= bounds.Min.Y && y < bounds.Max.Y {
 		o := 0
@@ -36,7 +36,7 @@ func ImageRowToFrame(img image.Image, y int) Frame {
 }
 
 func PixelListToFrame(px int, pl string) (Frame, error) {
-	f := make([]byte, px*3, px*3)
+	f := make([]byte, px*3)
 	o := 0
 	for _, s := range strings.Split(pl, ",") {
 		v, err := strconv.Atoi(strings.TrimSpace(s))
@@ -55,25 +55,25 @@ func PixelListToFrame(px int, pl string) (Frame, error) {
 	return f, nil
 }
 
-// Make sure we have exactly num pixels.  If not, repeat existing or
+// Resize makes sure we have exactly num pixels.  If not, repeat existing or
 // truncate.
-func (f Frame) Resize(num int) (Frame, error) {
-	if f == nil || len(f) == 0 {
+func (a Frame) Resize(num int) (Frame, error) {
+	if a == nil || len(a) == 0 {
 		return nil, ErrNoData
 	}
 
 	for {
-		l := num - len(f)
+		l := num - len(a)
 		switch {
 		case l == 0:
-			return f, nil
+			return a, nil
 		case l < 0:
-			f = f[:num]
-			return f, nil
-		case l >= len(f):
-			l = len(f)
+			a = a[:num]
+			return a, nil
+		case l >= len(a):
+			l = len(a)
 		}
-		f = append(f, f[:l]...)
+		a = append(a, a[:l]...)
 	}
 }
 
@@ -96,7 +96,7 @@ func SameSize(a Frame, b Frame) (Frame, Frame, error) {
 // Scale multiplies each byte by (mult/256)
 func (a Frame) Scale(mult int) Frame {
 	l := len(a)
-	f := make(Frame, l, l)
+	f := make(Frame, l)
 	for i := 0; i < l; i++ {
 		p := (int(a[i])*mult + 128) / 256
 		if p > 255 {
@@ -116,7 +116,7 @@ func (a Frame) Add(b Frame) Frame {
 	}
 
 	l := len(a)
-	f := make(Frame, l, l)
+	f := make(Frame, l)
 	for i := 0; i < l; i++ {
 		p := int(a[i]) + int(b[i])
 		if p > 255 {
@@ -136,7 +136,7 @@ func (a Frame) Merge(b Frame) Frame {
 	}
 
 	l := len(a)
-	f := make(Frame, l, l)
+	f := make(Frame, l)
 	for i := 0; i+2 < l; i += 3 {
 		av := int(a[i]) + int(a[i+1]) + int(a[i+2])
 		bv := int(b[i]) + int(b[i+1]) + int(b[i+2])
@@ -162,7 +162,7 @@ func (a Frame) Mult(b Frame) Frame {
 	}
 
 	l := len(a)
-	f := make(Frame, l, l)
+	f := make(Frame, l)
 	for i := 0; i < l; i++ {
 		f[i] = byte((int(a[i]) * int(b[i])) / 255)
 	}
@@ -170,9 +170,9 @@ func (a Frame) Mult(b Frame) Frame {
 	return f
 }
 
-func (f Frame) NextFrame() Frame {
-	return f
+func (a Frame) NextFrame() Frame {
+	return a
 }
 
-func (f Frame) Close() {
+func (a Frame) Close() {
 }

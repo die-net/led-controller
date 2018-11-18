@@ -37,11 +37,12 @@ func (t *Streamer) Worker(sc chan<- Frame, delay time.Duration) {
 
 	tick := time.NewTicker(delay)
 
+loop:
 	for {
 		select {
 		case fr := <-t.fc:
 			if fr == nil {
-				break
+				break loop
 			}
 			framer.Close()
 			framer = fr

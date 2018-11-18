@@ -157,6 +157,4 @@ func (s *Sender) reader(p *serial.Port) error {
 			}
 		}
 	}
-
-	return nil
 }
