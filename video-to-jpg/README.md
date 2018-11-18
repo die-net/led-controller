@@ -9,3 +9,11 @@ This converter:
 * Applies a mask to each frame, sampling pixels in the order they're represented over USB to the controller.
 * For each minute of video, generates one 1224x1800 JPEG image, representing the state of 1224 pixels over 1800 frames, and saves it.
 
+## Usage
+
+```
+brew install golang ffmpeg youtube-dl
+go build .
+youtube-dl -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4' https://www.youtube.com/watch?v=yI1Wr-mKjT4
+./video-to-jpg -video 'Trippy Visual - Marijuana-yI1Wr-mKjT4.mp4' -out-pattern trippy-%04d.jpg
+```
