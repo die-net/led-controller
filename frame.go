@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	ErrNoData        = errors.New("No pixel data supplied")
-	ErrInvalidOffset = errors.New("Invalid pixel offset")
+	ErrNoData        = errors.New("no pixel data supplied")
+	ErrInvalidOffset = errors.New("invalid pixel offset")
 )
 
 type Frame []byte
@@ -77,7 +77,7 @@ func (a Frame) Resize(num int) (Frame, error) {
 	}
 }
 
-func SameSize(a Frame, b Frame) (Frame, Frame, error) {
+func SameSize(a, b Frame) (Frame, Frame, error) {
 	l := len(a)
 	if l < len(b) {
 		l = len(b)

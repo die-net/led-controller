@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tarm/serial"
 	"log"
 	"time"
+
+	"github.com/tarm/serial"
 )
 
 var (
-	ErrShortWrite = errors.New("Wrote too few bytes")
+	ErrShortWrite = errors.New("wrote too few bytes")
 )
 
 type Sender struct {
@@ -61,7 +62,9 @@ func (s *Sender) send(fc <-chan Frame) error {
 	}
 	defer p.Close()
 
-	go s.reader(p)
+	// Assume reader will close cleanly after we call p.Close()
+	// TODO: Validate this.
+	go func() { _ = s.reader(p) }()
 
 	for frame := range fc {
 		if err := s.sendFrame(p, frame); err != nil {
@@ -76,9 +79,9 @@ func (s *Sender) SetColorFilter(f Frame) {
 	if len(f) == 3 && f[0] == 0xff && f[1] == 0xff && f[2] == 0xff {
 		s.ColorFilter = Frame{}
 	} else {
-		f, err := f.Resize(s.NumPixels)
+		f2, err := f.Resize(s.NumPixels)
 		if err == nil {
-			s.ColorFilter = f
+			s.ColorFilter = f2
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
@@ -10,10 +9,6 @@ import (
 	"math/rand"
 	"os"
 	"strings"
-)
-
-var (
-	ErrUnknownFormat = errors.New("Image is in unknown format")
 )
 
 type Decoder struct {

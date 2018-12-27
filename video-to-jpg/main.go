@@ -65,7 +65,7 @@ func main() {
 		}
 	}
 
-	if len(pixels) <= 0 {
+	if len(pixels) == 0 {
 		log.Fatal("-pixelBoxes must be set.")
 	}
 

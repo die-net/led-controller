@@ -2,17 +2,17 @@ package main
 
 import (
 	"flag"
-	"github.com/die-net/led-controller/ws"
 	"log"
 	"net/http"
 	_ "net/http/pprof" // Adds http://*/debug/pprof/ to default mux.
 	"runtime"
 	"time"
+
+	"github.com/die-net/led-controller/ws"
 )
 
 var (
 	listenAddr      = flag.String("listen", ":5309", "[IP]:port to listen for incoming connections")
-	filename        = flag.String("filename", "", "Filename of image to play")
 	imageFrameQueue = flag.Int("image-frame-queue", 5, "Image frame queue depth")
 	baudRate        = flag.Int("baud-rate", 115200, "Baud rate of serial port")
 	numPixels       = flag.Int("num-pixels", 2448, "Number of pixels on USB controller")
