@@ -95,8 +95,8 @@ void setup() {
 
   adc->setAveraging(32); // set number of averages
   adc->setResolution(ADC_RESOLUTION); // set bits of resolution
-  adc->setConversionSpeed(ADC_LOW_SPEED); // change the conversion speed
-  adc->setSamplingSpeed(ADC_LOW_SPEED); // change the sampling speed
+  //adc->setConversionSpeed(ADC_LOW_SPEED); // change the conversion speed
+  //adc->setSamplingSpeed(ADC_LOW_SPEED); // change the sampling speed
   adc->enableInterrupts(ADC_0);
   adc->startContinuous(AUDIO_PIN, ADC_0);
 
@@ -181,4 +181,3 @@ void loop() {
     receive_frame();
   }
 }
-
