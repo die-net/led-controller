@@ -23,7 +23,7 @@ var (
 	workers        = flag.Int("workers", runtime.NumCPU(), "Image decoding worker threads")
 	videoWidth     = flag.Int("video-width", 256, "Scaled video width")
 	videoHeight    = flag.Int("video-height", 144, "Scaled video height")
-	pixelBoxes     = flag.String("pixelBoxes", "143x114,103x82,67x52,30x21", "Comma seperated list of concentric boxes for pixel path")
+	pixelBoxes     = flag.String("pixelBoxes", "143x114,103x82,67x52,30x21", "Comma separated list of concentric boxes for pixel path")
 	pixels         = []image.Point{}
 	rowChan        chan row
 	wg             sync.WaitGroup
@@ -143,7 +143,9 @@ func readImage(filename string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	img, _, err := image.Decode(f)
 	return img, err
