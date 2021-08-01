@@ -115,7 +115,9 @@ func readImage(file string) (image.Image, error) {
 		return nil, err
 	}
 
-	defer reader.Close()
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	img, _, err := image.Decode(reader)
 	if err != nil {

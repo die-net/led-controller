@@ -1,4 +1,4 @@
-# LED Controller
+# LED Controller [![Build Status](https://github.com/die-net/led-controller/actions/workflows/go-test.yml/badge.svg)](https://github.com/die-net/led-controller/actions/workflows/go-test.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/die-net/led-controller)](https://goreportcard.com/report/github.com/die-net/led-controller)
 
 For my Burning Man 2016 art car, I need to do something interesting with a few thousand individually addressable 2813 + 5050 LEDs.
 

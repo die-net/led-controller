@@ -4,7 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	_ "net/http/pprof" // Adds http://*/debug/pprof/ to default mux.
+	_ "net/http/pprof" //nolint:gosec // TODO: Run this on its own port.
 	"runtime"
 	"time"
 

@@ -11,9 +11,7 @@ import (
 	"github.com/tarm/serial"
 )
 
-var (
-	ErrShortWrite = errors.New("wrote too few bytes")
-)
+var ErrShortWrite = errors.New("wrote too few bytes")
 
 type Sender struct {
 	SerialPort    string
@@ -54,13 +52,17 @@ func (s *Sender) Worker(fc <-chan Frame) {
 
 // send opens the serial port and tries to copy FrameChan to it, returning
 // on error or if FrameChan is closed.
-func (s *Sender) send(fc <-chan Frame) error {
+func (s *Sender) send(fc <-chan Frame) (Err error) {
 	config := &serial.Config{Name: s.SerialPort, Baud: s.BaudRate}
 	p, err := serial.OpenPort(config)
 	if err != nil {
 		return err
 	}
-	defer p.Close()
+	defer func() {
+		if err := p.Close(); Err == nil {
+			Err = err
+		}
+	}()
 
 	// Assume reader will close cleanly after we call p.Close()
 	// TODO: Validate this.
