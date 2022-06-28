@@ -58,7 +58,7 @@ func PixelListToFrame(px int, pl string) (Frame, error) {
 // Resize makes sure we have exactly num pixels.  If not, repeat existing or
 // truncate.
 func (a Frame) Resize(num int) (Frame, error) {
-	if a == nil || len(a) == 0 {
+	if len(a) == 0 {
 		return nil, ErrNoData
 	}
 

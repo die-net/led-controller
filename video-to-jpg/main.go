@@ -158,7 +158,7 @@ func writeJpeg(img image.Image, filename string) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(filename, buf.Bytes(), 0644)
+	err = ioutil.WriteFile(filename, buf.Bytes(), 0o644)
 	if err != nil {
 		return err
 	}
